@@ -7,7 +7,7 @@ import {
   StatusBar,
   StyleSheet,
 } from 'react-native';
-// import {MusicFiles} from '../utils';
+import {MusicFiles} from '../utils';
 import MusicList from '../components/MusicList';
 import {travis} from '../assets/images';
 import StackPlayer from '../components/StackPlayer';
@@ -47,24 +47,25 @@ const PlayList = ({navigation}) => {
     },
   ]);
 
-  // React.useEffect(() => {
-  //   MusicFiles.getAll({
-  //     blured: true, // works only when 'cover' is set to true
-  //     artist: true,
-  //     duration: true, //default : true
-  //     cover: false, //default : true,
-  //     genre: true,
-  //     title: true,
-  //     minimumSongDuration: 10000, // get songs bigger than 10000 miliseconds duration,
-  //     fields: ['title', 'albumTitle', 'genre', 'lyrics', 'artwork', 'duration'], // for iOs Version
-  //   })
-  //     .then((tracks) => {
-  //       console.log(tracks);
-  //     })
-  //     .catch((error) => {
-  //       console.log(error);
-  //     });
-  // }, []);
+  React.useEffect(() => {
+    // MusicFiles.getAll({
+    //   blured: true, // works only when 'cover' is set to true
+    //   artist: true,
+    //   duration: true, //default : true
+    //   cover: false, //default : true,
+    //   genre: true,
+    //   title: true,
+    //   minimumSongDuration: 10000, // get songs bigger than 10000 miliseconds duration,
+    //   fields: ['title', 'albumTitle', 'genre', 'lyrics', 'artwork', 'duration'], // for iOs Version
+    // })
+    //   .then((tracks) => {
+    //     console.log(tracks);
+    //   })
+    //   .catch((error) => {
+    //     console.log(error);
+    //   });
+    console.log(MusicFiles.getAll);
+  }, []);
 
   return (
     <>
