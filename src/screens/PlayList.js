@@ -30,8 +30,8 @@ const PlayList = ({navigation}) => {
       fields: ['title', 'albumTitle', 'genre', 'lyrics', 'artwork', 'duration'], // for iOs Version
     })
       .then((tracks) => {
-        console.log(tracks);
         setMusics(tracks);
+        console.log(tracks);
       })
       .catch((error) => {
         // catch the error
@@ -64,6 +64,7 @@ const PlayList = ({navigation}) => {
               time={m.duration}
               onClick={() =>
                 navigation.navigate('Player', {
+                  id: i,
                   music: m,
                 })
               }

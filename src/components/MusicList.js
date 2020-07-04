@@ -1,5 +1,6 @@
 import React from 'react';
 import {View, Text, StyleSheet, Image, TouchableOpacity} from 'react-native';
+import {formatTime} from '../utils';
 
 const MusicList = ({onClick, title, subtitle, art, time}) => {
   return (
@@ -19,7 +20,7 @@ const MusicList = ({onClick, title, subtitle, art, time}) => {
         </Text>
       </View>
       <View style={styles.timeContainer}>
-        <Text style={styles.time}>{time / 1000}</Text>
+        <Text style={styles.time}>{formatTime(time)}</Text>
       </View>
     </TouchableOpacity>
   );

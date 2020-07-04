@@ -5,7 +5,7 @@ import Carousel from 'react-native-snap-carousel';
 const SwipeablePlaylist = ({data}) => {
   const _renderItem = ({item, index}) => {
     return (
-      <View style={styles.cardStack}>
+      <View key={`${index}`} style={styles.cardStack}>
         <View
           style={{
             ...styles.cardView,

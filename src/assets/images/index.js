@@ -7,6 +7,8 @@ import pauseBlack from './pause-black.png';
 import forwardBlack from './forward-black.png';
 import backwardBlack from './backward-black.png';
 import arrowBack from './arrow-back.png';
+import playBlack from './play.png';
+import play from './play-white.png';
 
 export {
   playerBg,
@@ -18,4 +20,6 @@ export {
   forwardBlack,
   backwardBlack,
   arrowBack,
+  play,
+  playBlack,
 };
