@@ -11,11 +11,15 @@ const MusicList = ({onClick, title, subtitle, art, time}) => {
         <Image style={styles.art} source={art} />
       </View>
       <View style={styles.content}>
-        <Text style={styles.title}>{title}</Text>
-        <Text style={styles.subTitle}>{subtitle}</Text>
+        <Text numberOfLines={1} style={styles.title}>
+          {title}
+        </Text>
+        <Text numberOfLines={1} style={styles.subTitle}>
+          {subtitle}
+        </Text>
       </View>
       <View style={styles.timeContainer}>
-        <Text style={styles.time}>{time}</Text>
+        <Text style={styles.time}>{time / 1000}</Text>
       </View>
     </TouchableOpacity>
   );

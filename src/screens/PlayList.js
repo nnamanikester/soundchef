@@ -7,64 +7,35 @@ import {
   StatusBar,
   StyleSheet,
 } from 'react-native';
-import {MusicFiles} from '../utils';
 import MusicList from '../components/MusicList';
 import {travis} from '../assets/images';
 import StackPlayer from '../components/StackPlayer';
 import SwipeablePlaylist from '../components/SwipeablePlaylist';
+import MusicFiles from 'react-native-get-music-files';
 
 const STATUSBAR_HEIGHT = Platform.OS === 'ios' ? 20 : StatusBar.currentHeight;
 
 const PlayList = ({navigation}) => {
-  const [musics] = React.useState([
-    {
-      key: '1',
-      art: travis,
-      title: 'The Weekend',
-      subtitle: 'Party Monster',
-      time: '3:55',
-    },
-    {
-      key: '2',
-      art: travis,
-      title: '21 Savage',
-      subtitle: 'A Lot',
-      time: '4:25',
-    },
-    {
-      key: '3',
-      art: travis,
-      title: 'Post Malone',
-      subtitle: 'Goodbyes',
-      time: '5:05',
-    },
-    {
-      key: '4',
-      art: travis,
-      title: 'Calvin Harris ft Future',
-      subtitle: 'Rollin',
-      time: '3:43',
-    },
-  ]);
+  const [musics, setMusics] = React.useState([]);
 
   React.useEffect(() => {
-    // MusicFiles.getAll({
-    //   blured: true, // works only when 'cover' is set to true
-    //   artist: true,
-    //   duration: true, //default : true
-    //   cover: false, //default : true,
-    //   genre: true,
-    //   title: true,
-    //   minimumSongDuration: 10000, // get songs bigger than 10000 miliseconds duration,
-    //   fields: ['title', 'albumTitle', 'genre', 'lyrics', 'artwork', 'duration'], // for iOs Version
-    // })
-    //   .then((tracks) => {
-    //     console.log(tracks);
-    //   })
-    //   .catch((error) => {
-    //     console.log(error);
-    //   });
-    console.log(MusicFiles.getAll);
+    MusicFiles.getAll({
+      blured: false, // works only when 'cover' is set to true
+      artist: true,
+      duration: true, //default : true
+      cover: true, //default : true,
+      genre: true,
+      title: true,
+      minimumSongDuration: 10000, // get songs bigger than 10000 miliseconds duration,
+      fields: ['title', 'albumTitle', 'genre', 'lyrics', 'artwork', 'duration'], // for iOs Version
+    })
+      .then((tracks) => {
+        console.log(tracks);
+        setMusics(tracks);
+      })
+      .catch((error) => {
+        // catch the error
+      });
   }, []);
 
   return (
@@ -83,20 +54,17 @@ const PlayList = ({navigation}) => {
 
         <Text style={styles.queue}>Queue</Text>
 
-        {musics.map((m) => {
+        {musics.map((m, i) => {
           return (
             <MusicList
-              key={m.key}
-              art={m.art}
+              key={m.title + i}
+              art={{uri: m.cover}}
               title={m.title}
-              subtitle={m.subtitle}
-              time={m.time}
+              subtitle={m.author}
+              time={m.duration}
               onClick={() =>
                 navigation.navigate('Player', {
-                  title: m.title,
-                  subtitle: m.subtitle,
-                  time: m.time,
-                  art: m.art,
+                  music: m,
                 })
               }
             />
