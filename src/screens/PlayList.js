@@ -16,12 +16,7 @@ import StackPlayer from '../components/StackPlayer';
 import MusicFiles from 'react-native-get-music-files';
 import TrackPlayer from 'react-native-track-player';
 import {useTrackPlayerProgress} from 'react-native-track-player';
-import {
-  forwardBlack,
-  backwardBlack,
-  pauseBlack,
-  playBlack,
-} from '../assets/images';
+import SplashScreen from 'react-native-splash-screen';
 
 const STATUSBAR_HEIGHT = Platform.OS === 'ios' ? 20 : StatusBar.currentHeight;
 
@@ -32,15 +27,28 @@ const PlayList = ({navigation}) => {
   const {position, duration} = useTrackPlayerProgress();
   const {loading, setLoading} = React.useState(true);
 
+  async function getPlaying() {
+    let trackId = await TrackPlayer.getCurrentTrack();
+    let trackObject = await TrackPlayer.getTrack(trackId);
+
+    setPlaying(trackObject);
+  }
+
   React.useEffect(() => {
-    async function getPlaying() {
-      let trackId = await TrackPlayer.getCurrentTrack();
-      let trackObject = await TrackPlayer.getTrack(trackId);
-
-      setPlaying(trackObject);
-    }
     getPlaying();
+  }, [playing]);
 
+  React.useEffect(() => {
+    setTimeout(() => {
+      SplashScreen.hide();
+    }, 5000);
+
+    TrackPlayer.updateOptions({
+      stopWithApp: true,
+    });
+  }, []);
+
+  React.useEffect(() => {
     const requestStoragePermission = async () => {
       try {
         const granted = await PermissionsAndroid.request(
@@ -106,19 +114,7 @@ const PlayList = ({navigation}) => {
     };
 
     requestStoragePermission();
-
-    TrackPlayer.updateOptions({
-      stopWithApp: false,
-
-      // Icons for the notification on Android (if you don't like the default ones)
-      playIcon: playBlack,
-      pauseIcon: pauseBlack,
-      // stopIcon: require('./stop-icon.png'),
-      previousIcon: backwardBlack,
-      nextIcon: forwardBlack,
-      // icon: require('./notification-icon.png'), // The notification icon
-    });
-  }, [loading, playing]);
+  }, [loading, setLoading]);
 
   return (
     <>
@@ -139,7 +135,7 @@ const PlayList = ({navigation}) => {
 
         {!musics.length > 0 && (
           <View style={styles.empty}>
-            {!loading ? (
+            {loading ? (
               <Text style={styles.noMusic}>No Music Found!</Text>
             ) : (
               <Text style={styles.noMusic}>Loading...</Text>
@@ -162,6 +158,7 @@ const PlayList = ({navigation}) => {
                 onClick={async () => {
                   TrackPlayer.skip(item.id);
                   TrackPlayer.play();
+                  getPlaying();
                   navigation.navigate('Player', {
                     blur: item.blur,
                     duration: item.duration,
@@ -172,7 +169,8 @@ const PlayList = ({navigation}) => {
           }}
         />
       </View>
-      {playing && playing.id && (
+
+      {playing ? (
         <StackPlayer
           title={playing.title}
           subtitle={playing.artist}
@@ -193,7 +191,7 @@ const PlayList = ({navigation}) => {
           onNext={() => TrackPlayer.skipToNext()}
           onPrev={() => TrackPlayer.skipToPrevious()}
         />
-      )}
+      ) : null}
     </>
   );
 };
