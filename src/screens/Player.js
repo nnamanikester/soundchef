@@ -8,91 +8,39 @@ import {
   Image,
   TouchableOpacity,
 } from 'react-native';
-import {
-  playerBg,
-  pause,
-  forward,
-  backward,
-  arrowBack,
-  play,
-} from '../assets/images';
-import {formatTime} from '../utils';
+import {pause, forward, backward, arrowBack, play} from '../assets/images';
+import {formatDuration, formatTime} from '../utils';
 import TrackPlayer from 'react-native-track-player';
-import MusicFiles from 'react-native-get-music-files';
+import {useTrackPlayerProgress} from 'react-native-track-player';
 
 const STATUSBAR_HEIGHT = Platform.OS === 'ios' ? 20 : StatusBar.currentHeight;
 
 const Player = ({navigation, route: {params}}) => {
-  const {title, author, cover, duration, album, genre, path} = params.music;
+  const [playing, setPlaying] = React.useState(true);
   const [track, setTrack] = React.useState({});
-  const [playing, setPlaying] = React.useState(false);
-  const [seekTime, setSeekTime] = React.useState(0);
-  const [id, setId] = React.useState(params.id);
+  const {position, duration} = useTrackPlayerProgress();
 
   React.useEffect(() => {
-    MusicFiles.getAll({
-      blured: false, // works only when 'cover' is set to true
-      artist: true,
-      duration: true, //default : true
-      cover: true, //default : true,
-      genre: true,
-      title: true,
-      minimumSongDuration: 10000, // get songs bigger than 10000 miliseconds duration,
-      fields: ['title', 'albumTitle', 'genre', 'lyrics', 'artwork', 'duration'], // for iOs Version
-    })
-      .then((t) => {
-        setTrack({
-          id: `${id}`,
-          url: `file://${t[id].path}`,
-          title: t[id].title,
-          artist: t[id].author,
-          album: t[id].album,
-          genre: t[id].genre,
-          artwork: t[id].cover,
-        });
-      })
-      .catch((error) => {
-        // catch the error
-      });
-  }, [id]);
-
-  React.useEffect(() => {
-    async function set() {
-      let t = await TrackPlayer.getBufferedPosition();
-      let state = await TrackPlayer.getState();
+    async function getTrack() {
       let trackId = await TrackPlayer.getCurrentTrack();
+      let trackObject = await TrackPlayer.getTrack(trackId);
 
-      setSeekTime(t);
-      if (track.id === trackId) {
-        setPlaying(state === 3);
-      }
+      setTrack(trackObject);
     }
-    set();
-  }, [seekTime, playing, track.id]);
+    getTrack();
+  }, [track]);
 
   const playMusic = async () => {
-    if (!track.id) {
-      return;
-    }
     let state = await TrackPlayer.getState();
-    let trackId = await TrackPlayer.getCurrentTrack();
-
-    if (trackId !== track.id) {
-      TrackPlayer.reset();
-    }
-
-    TrackPlayer.add(track).then(() => {
-      if (state === 3 && trackId !== track.id) {
-        TrackPlayer.play();
-        setPlaying(true);
-      }
-    });
 
     if (state === 3) {
       TrackPlayer.pause();
       setPlaying(false);
     } else {
-      TrackPlayer.play();
+      TrackPlayer.add(track).then(() => {
+        TrackPlayer.play();
+        setPlaying(true);
+      });
       setPlaying(true);
     }
   };
@@ -106,7 +54,7 @@ const Player = ({navigation, route: {params}}) => {
           barStyle="light-content"
         />
       </View>
-      <Image style={styles.background} source={playerBg} />
+      <Image style={styles.background} source={{uri: params.blur}} />
 
       <TouchableOpacity
         style={styles.backButton}
@@ -117,28 +65,33 @@ const Player = ({navigation, route: {params}}) => {
 
       <View style={styles.container}>
         <View style={styles.imageHolder}>
-          <Image style={styles.art} source={{uri: cover}} />
+          <Image style={styles.art} source={{uri: track && track.artwork}} />
         </View>
         <View style={styles.titleContainer}>
           <Text numberOfLines={2} style={styles.title}>
-            {title}
+            {track && track.title}
           </Text>
           <Text numberOfLines={1} style={styles.author}>
-            {author}
+            {track && track.artist}
           </Text>
         </View>
         <View style={styles.playerContainer}>
           <View style={styles.seekerContainer}>
-            <View style={styles.seeker} />
+            <View
+              style={{
+                ...styles.seeker,
+                width: `${((position / duration) * 100).toFixed(0)}%`,
+              }}
+            />
           </View>
           <View style={styles.seekerDutarionContainer}>
-            <Text style={styles.duration}>{formatTime(seekTime)}</Text>
-            <Text style={styles.duration}>{formatTime(duration)}</Text>
+            <Text style={styles.duration}>{formatDuration(position)}</Text>
+            <Text style={styles.duration}>{formatDuration(duration)}</Text>
           </View>
         </View>
         <View style={styles.controlsContainer}>
           <TouchableOpacity
-            onPress={() => TrackPlayer.reset()}
+            onPress={() => TrackPlayer.skipToPrevious()}
             style={styles.controls}
             activeOpacity={0.99}>
             <Image source={backward} />
@@ -153,7 +106,10 @@ const Player = ({navigation, route: {params}}) => {
               <Image style={{width: 60, height: 60}} source={play} />
             )}
           </TouchableOpacity>
-          <TouchableOpacity style={styles.controls} activeOpacity={0.99}>
+          <TouchableOpacity
+            onPress={() => TrackPlayer.skipToNext()}
+            style={styles.controls}
+            activeOpacity={0.99}>
             <Image source={forward} />
           </TouchableOpacity>
         </View>
@@ -180,9 +136,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   imageHolder: {
-    width: 220,
-    height: 220,
+    width: 200,
+    height: 200,
     elevation: 10,
+    zIndex: 999,
   },
   art: {
     width: '100%',
@@ -215,7 +172,6 @@ const styles = StyleSheet.create({
   },
   seeker: {
     height: '100%',
-    width: '80%',
     backgroundColor: '#353535',
   },
   seekerDutarionContainer: {

@@ -1,42 +1,124 @@
 import React from 'react';
 import {
   View,
-  ScrollView,
   Text,
   Platform,
   StatusBar,
   StyleSheet,
+  PermissionsAndroid,
+  ToastAndroid,
+  Dimensions,
+  FlatList,
 } from 'react-native';
 import MusicList from '../components/MusicList';
-import {travis} from '../assets/images';
 import StackPlayer from '../components/StackPlayer';
-import SwipeablePlaylist from '../components/SwipeablePlaylist';
+// import SwipeablePlaylist from '../components/SwipeablePlaylist';
 import MusicFiles from 'react-native-get-music-files';
+import TrackPlayer from 'react-native-track-player';
+import {useTrackPlayerProgress} from 'react-native-track-player';
+import {
+  forwardBlack,
+  backwardBlack,
+  pauseBlack,
+  playBlack,
+} from '../assets/images';
 
 const STATUSBAR_HEIGHT = Platform.OS === 'ios' ? 20 : StatusBar.currentHeight;
 
 const PlayList = ({navigation}) => {
   const [musics, setMusics] = React.useState([]);
+  const [playing, setPlaying] = React.useState({});
+  const [isPlaying, setIsPlaying] = React.useState(false);
+  const {position, duration} = useTrackPlayerProgress();
+  const {loading, setLoading} = React.useState(true);
 
   React.useEffect(() => {
-    MusicFiles.getAll({
-      blured: false, // works only when 'cover' is set to true
-      artist: true,
-      duration: true, //default : true
-      cover: true, //default : true,
-      genre: true,
-      title: true,
-      minimumSongDuration: 10000, // get songs bigger than 10000 miliseconds duration,
-      fields: ['title', 'albumTitle', 'genre', 'lyrics', 'artwork', 'duration'], // for iOs Version
-    })
-      .then((tracks) => {
-        setMusics(tracks);
-        console.log(tracks);
-      })
-      .catch((error) => {
-        // catch the error
-      });
-  }, []);
+    async function getPlaying() {
+      let trackId = await TrackPlayer.getCurrentTrack();
+      let trackObject = await TrackPlayer.getTrack(trackId);
+
+      setPlaying(trackObject);
+    }
+    getPlaying();
+
+    const requestStoragePermission = async () => {
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
+          {
+            title: 'Storage Permission',
+            message:
+              'SoundChef needs to access your storage ' +
+              'so you can play your musics.',
+            buttonNeutral: 'Ask Me Later',
+            buttonNegative: 'Cancel',
+            buttonPositive: 'OK',
+          },
+        );
+        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+          MusicFiles.getAll({
+            blured: true, // works only when 'cover' is set to true
+            artist: true,
+            duration: true, //default : true
+            cover: true, //default : true,
+            genre: true,
+            title: true,
+            minimumSongDuration: 10000, // get songs bigger than 10000 miliseconds duration,
+            fields: [
+              'title',
+              'albumTitle',
+              'genre',
+              'lyrics',
+              'artwork',
+              'duration',
+            ], // for iOs Version
+          })
+            .then((tracks) => {
+              tracks = tracks.map((t, i) => {
+                return {
+                  id: `${i}`,
+                  url: `file://${t.path}`,
+                  title: t.title,
+                  artist: t.author,
+                  album: t.album,
+                  genre: t.genre,
+                  artwork: t.cover,
+                  duration: t.duration,
+                  blur: t.blur,
+                };
+              });
+              setMusics(tracks);
+              TrackPlayer.add(tracks).then(() => {});
+              setLoading(false);
+            })
+            .catch((error) => {
+              // catch the error
+            });
+        } else {
+          ToastAndroid.show(
+            'Sorry! You cannot use this app unless you accept the permission!',
+            ToastAndroid.SHORT,
+          );
+        }
+      } catch (err) {
+        ToastAndroid.show(err.message, ToastAndroid.SHORT);
+      }
+    };
+
+    requestStoragePermission();
+
+    TrackPlayer.updateOptions({
+      stopWithApp: false,
+
+      // Icons for the notification on Android (if you don't like the default ones)
+      playIcon: playBlack,
+      pauseIcon: pauseBlack,
+      // stopIcon: require('./stop-icon.png'),
+      previousIcon: backwardBlack,
+      nextIcon: forwardBlack,
+      // icon: require('./notification-icon.png'), // The notification icon
+    });
+  }, [loading, playing]);
 
   return (
     <>
@@ -47,33 +129,71 @@ const PlayList = ({navigation}) => {
           barStyle="light-content"
         />
       </View>
-      <ScrollView style={styles.container}>
-        <Text style={styles.title}>Playlists</Text>
+      <View style={styles.container}>
+        {/* <Text style={styles.title}>Playlists</Text>
 
-        <SwipeablePlaylist data={musics} />
+        <SwipeablePlaylist data={musics} /> */}
 
-        <Text style={styles.queue}>Queue</Text>
+        {/* <Text style={styles.queue}>Queue</Text> */}
+        <Text style={styles.title}>Songs</Text>
 
-        {musics.map((m, i) => {
-          return (
-            <MusicList
-              key={m.title + i}
-              art={{uri: m.cover}}
-              title={m.title}
-              subtitle={m.author}
-              time={m.duration}
-              onClick={() =>
-                navigation.navigate('Player', {
-                  id: i,
-                  music: m,
-                })
-              }
-            />
-          );
-        })}
-        <View style={styles.bottomSpace} />
-      </ScrollView>
-      <StackPlayer title="The Weekend" subtitle="Party Monster" art={travis} />
+        {!musics.length > 0 && (
+          <View style={styles.empty}>
+            {!loading ? (
+              <Text style={styles.noMusic}>No Music Found!</Text>
+            ) : (
+              <Text style={styles.noMusic}>Loading...</Text>
+            )}
+          </View>
+        )}
+
+        <FlatList
+          data={musics}
+          showsVerticalScrollIndicator={false}
+          ListFooterComponent={<View style={styles.bottomSpace} />}
+          keyExtractor={(item) => item.id}
+          renderItem={({item}) => {
+            return (
+              <MusicList
+                art={{uri: item.artwork}}
+                title={item.title}
+                subtitle={item.artist}
+                time={item.duration}
+                onClick={async () => {
+                  TrackPlayer.skip(item.id);
+                  TrackPlayer.play();
+                  navigation.navigate('Player', {
+                    blur: item.blur,
+                    duration: item.duration,
+                  });
+                }}
+              />
+            );
+          }}
+        />
+      </View>
+      {playing && playing.id && (
+        <StackPlayer
+          title={playing.title}
+          subtitle={playing.artist}
+          art={{uri: playing.artwork}}
+          position={position}
+          duration={duration}
+          isPlaying={isPlaying}
+          onPlayPause={async () => {
+            const current = await TrackPlayer.getState();
+            if (current === 3) {
+              TrackPlayer.pause();
+              setIsPlaying(false);
+            } else {
+              TrackPlayer.play();
+              setIsPlaying(true);
+            }
+          }}
+          onNext={() => TrackPlayer.skipToNext()}
+          onPrev={() => TrackPlayer.skipToPrevious()}
+        />
+      )}
     </>
   );
 };
@@ -93,13 +213,23 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   title: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: 'bold',
     color: '#fff',
     marginVertical: 20,
   },
   bottomSpace: {
     marginVertical: 100,
+  },
+  empty: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+    height: Dimensions.get('screen').height - 200,
+  },
+  noMusic: {
+    color: '#fff',
+    fontSize: 28,
   },
 });
 

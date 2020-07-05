@@ -1,21 +1,56 @@
 import React from 'react';
-import {View, Text, StyleSheet, Image} from 'react-native';
-import {pauseBlack, forwardBlack, backwardBlack} from '../assets/images';
+import {View, Text, StyleSheet, Image, TouchableOpacity} from 'react-native';
+import {
+  pauseBlack,
+  playBlack,
+  forwardBlack,
+  backwardBlack,
+} from '../assets/images';
+import TrackPlayer from 'react-native-track-player';
 
-const StackPlayer = ({title, subtitle, art}) => {
+const StackPlayer = ({
+  title,
+  subtitle,
+  art,
+  position,
+  duration,
+  onPlayPause,
+  onNext,
+  onPrev,
+  isPlaying,
+}) => {
   return (
     <View style={styles.container}>
+      <View
+        style={{
+          ...styles.seek,
+          width: `${((position / duration) * 100).toFixed(0)}%`,
+        }}
+      />
       <View style={styles.imageContainer}>
         <Image style={styles.art} source={art} />
       </View>
       <View style={styles.content}>
-        <Text style={styles.title}>{title}</Text>
-        <Text style={styles.subTitle}>{subtitle}</Text>
+        <Text numberOfLines={1} style={styles.title}>
+          {title}
+        </Text>
+        <Text numberOfLines={1} style={styles.subTitle}>
+          {subtitle}
+        </Text>
       </View>
       <View style={styles.controlsContainer}>
-        <Image style={styles.controls} source={backwardBlack} />
-        <Image style={styles.controls} source={pauseBlack} />
-        <Image style={styles.controls} source={forwardBlack} />
+        <TouchableOpacity onPress={onPrev} activeOpacity={0.9}>
+          <Image style={styles.controls} source={backwardBlack} />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={onPlayPause} activeOpacity={0.9}>
+          <Image
+            style={styles.controls}
+            source={isPlaying ? pauseBlack : playBlack}
+          />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={onNext} activeOpacity={0.9}>
+          <Image style={styles.controls} source={forwardBlack} />
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -67,6 +102,13 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     marginLeft: 25,
+  },
+  seek: {
+    height: 5,
+    backgroundColor: '#353535',
+    position: 'absolute',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
   },
 });
 
